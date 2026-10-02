@@ -1,56 +1,71 @@
-# Welcome to your Expo app 👋
+# Bespoke Measure
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A tailor-facing measurement app built with Expo Router, runnable directly in **Expo Go** —
+no custom native build required.
 
-## Get started
+- **Approach 3 (guided manual + validation)** is the default flow: step through each
+  measurement point with a plausibility rules engine that flags outliers before saving.
+- **Approach 1 (photo-assisted)** is available as an optional method: capture two reference
+  photos plus a height reference, get prefilled estimates, then confirm or correct every
+  value in the same guided flow. Nothing saves without a human pass over the numbers.
+- Tailors can define **fully custom measurement templates** — add any category, choose
+  cm/in, set optional min/max plausibility bounds — and reuse them per garment style
+  (e.g. "Men's dress shirt", "Women's blazer").
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with the Expo Go app (iOS or Android). No EAS build, no dev client needed —
+everything here uses only Expo-Go-compatible packages (`expo-camera`, `expo-router`,
+AsyncStorage).
 
-### Other setup steps
+## Why photo estimation is a stub
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+On-device pose estimation (MediaPipe, TFLite, etc.) needs custom native modules that Expo Go's
+sandboxed runtime doesn't support — that requires a custom development build, which was
+explicitly out of scope here. So the architecture instead keeps photo *capture* on-device
+(`expo-camera`, fully Expo-Go-compatible) and treats the actual estimation math as a **server
+call** — see `src/photoEstimation.ts`. Right now that function simulates a response using rough
+population-average body ratios purely so the guided-confirmation UX works end-to-end. Swap in a
+real `fetch()` to a backend (e.g. the FastAPI + MediaPipe service from the architecture diagram)
+and nothing else in the app needs to change.
 
-## Learn more
+## Project structure
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+app/                      Expo Router screens (file-based routing)
+  index.tsx               Home dashboard
+  templates/               Template list, detail, and the custom-field builder
+  clients/                 Client list, detail with measurement history
+  measure/                 Method selection, guided stepper, photo capture
+src/
+  types.ts                Shared types
+  storage.ts              AsyncStorage data layer (templates, clients, sessions)
+  validation.ts           Plausibility rules engine (min/max + cross-field ratios)
+  photoEstimation.ts       Approach 1 stub — swap for a real backend call
+  data/defaultTemplates.ts Starter templates seeded on first launch
+  components/              FieldInput, ProgressBar
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Data model notes
 
-## Join the community
+- Templates, clients, and measurement sessions are stored locally via AsyncStorage. This is
+  fine for a single tailor on a single device; for a multi-device or multi-tailor setup, swap
+  `src/storage.ts` for calls to a real backend — the function signatures are already shaped
+  like a CRUD API, so screens don't need to change.
+- Each measurement session records which fields (if any) had a plausibility warning the tailor
+  chose to override, so you have an audit trail if a garment ends up not fitting.
 
-Join our community of developers creating universal apps.
+## Extending
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Custom templates**: `app/templates/create.tsx` is the field builder. Add a field, pick a
+  unit, optionally set min/max. Templates flagged `isCustom: true` are fully tailor-defined.
+- **Validation rules**: `src/validation.ts`'s `RATIO_RULES` array is where cross-field sanity
+  checks live (e.g. waist-to-chest ratio). Add more rules keyed on label keywords, or wire in
+  per-template custom rules if you outgrow the heuristic-by-label-name approach.
+- **Real photo estimation**: replace the body of `estimateMeasurementsFromPhotos` in
+  `src/photoEstimation.ts` with a `fetch()` to your pose-estimation backend.

@@ -1,43 +1,36 @@
 {
   "expo": {
-    "name": "style-builder",
-    "slug": "style-builder",
+    "name": "Bespoke Measure",
+    "slug": "bespoke-measure",
+    "scheme": "bespokemeasure",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "stylebuilder",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "icon": "./assets/expo.icon"
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to capture reference photos for photo-assisted measurement estimation."
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "package": "com.bespokemeasure.app",
+      "permissions": [
+        "CAMERA"
+      ]
     },
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
+        "expo-camera",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to capture reference photos for measurement estimation."
         }
       ],
-      "expo-image"
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+      "expo-status-bar"
+    ]
   }
 }
